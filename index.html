@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Totem1</title>
+  <link rel="stylesheet" href="frames.css">
+  <link rel="shortcut icon" href="img/logodudu.jpeg" type="image/png">
+</head>
+<body>
+
+  <!-- Stage rotacionado: compensa o totem montado fisicamente na vertical -->
+  <div id="rotateStage" class="rotate-stage">
+
+    <!-- Overlay de carregamento, exibido enquanto as 240 imagens são pré-carregadas -->
+    <div id="loader" class="loader">
+      <div class="loader__text">CARREGANDO <span id="loaderPercent">0%</span></div>
+      <div class="loader__bar"><div id="loaderFill" class="loader__fill"></div></div>
+    </div>
+
+    <!-- Canvas onde cada frame da garrafa é desenhado -->
+    <canvas id="frameCanvas" class="frame-canvas"></canvas>
+
+    <!-- Label acima da câmara/cilindro principal -->
+    <span class="extra-label extra-label--camara">CÂMARA DE ANÁLISE</span>
+
+    <!-- Quadro maior superior esquerdo: título + subtítulo de introdução -->
+    <div class="intro-panel">
+      <div class="intro-panel__inner">
+        <h1 class="intro-panel__title">VESTÍGIOS DO TEMPO</h1>
+        <p class="intro-panel__subtitle">Observe como materiais do cotidiano se transformam ao longo de décadas e séculos. Deslize o controle temporal para acelerar processos invisíveis à escala da vida humana.</p>
+      </div>
+    </div>
+
+    <!-- Painel lateral esquerdo: 3 quadros de informação, conectados ao slider -->
+    <div class="info-panel info-panel--material">
+      <div class="info-panel__inner">
+        <span class="info-panel__title">TIPO DE MATERIAL</span>
+        <span id="materialValue" class="info-panel__value info-panel__value--spaced">PET</span>
+      </div>
+    </div>
+
+    <div class="info-panel info-panel--tempo">
+      <div class="info-panel__inner">
+        <span class="info-panel__title">TEMPO DECORRIDO</span>
+        <span class="info-panel__value-row">
+          <svg class="info-panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 7v5l3 3"></path>
+          </svg>
+          <span id="tempoValue" class="info-panel__value">0 ANOS</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="info-panel info-panel--integridade">
+      <div class="info-panel__inner">
+        <span class="info-panel__title">INTEGRIDADE</span>
+        <span class="info-panel__integridade-row">
+          <span class="info-panel__integridade-label">Integridade:</span>
+          <span id="integridadeValue" class="info-panel__integridade-value">100%</span>
+        </span>
+        <div class="info-panel__bar-track">
+          <div id="integridadeBarFill" class="info-panel__bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slider vertical, fixo à direita, controla e reflete o frame atual -->
+    <div class="slider-wrap">
+      <input
+        type="range"
+        id="frameSlider"
+        class="vertical-slider"
+        min="0"
+        max="239"
+        step="1"
+        value="0"
+        aria-label="Controle de frame da animação"
+      >
+    </div>
+
+    <!-- Label ao lado do slider vertical, lendo de baixo pra cima -->
+    <span class="extra-label extra-label--controle">CONTROLE TEMPORAL</span>
+
+    <!-- Label acima do (futuro) container dos botões de seleção de material -->
+    <span class="extra-label extra-label--selecione">SELECIONE O MATERIAL</span>
+
+  </div>
+
+  <script src="frames.js"></script>
+</body>
+</html>

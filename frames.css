@@ -1,0 +1,431 @@
+/* Fontes do projeto: títulos em Oxanium SemiBold, infos/subtítulos em Roboto Light */
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700&family=Roboto:wght@300;500&display=swap');
+
+/* ==========================================================================
+   RESET BÁSICO
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: #000; /* evita qualquer "flash" nas bordas durante a rotação */
+  overflow: hidden; /* sem scroll - o frame é controlado só pelo slider */
+}
+
+/* ==========================================================================
+   ROTAÇÃO DA INTERFACE (totem montado fisicamente na vertical)
+   - O navegador continua vendo um viewport paisagem (ex: 1920x1080).
+   - O stage recebe as dimensões invertidas e roda 90°, passando a ocupar
+     exatamente 100vw x 100vh da tela real, em qualquer resolução.
+   - position: fixed faz o stage virar o "containing block" dos filhos
+     (que usam position: absolute), então tudo dentro dele passa a ser
+     posicionado em relação ao stage já rotacionado, não ao viewport real.
+   ========================================================================== */
+.rotate-stage {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+  overflow: hidden;
+
+  /* Imagem de fundo do totem (1080x1920), cobrindo 100% do stage já rotacionado */
+  background: url('img/BG.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ==========================================================================
+   VARIÁVEIS (paleta HUD futurista, consistente com o totem)
+   ========================================================================== */
+:root {
+  --color-neon: #00f7ff;
+  --color-neon-soft: rgba(0, 247, 255, 0.4);
+  --color-bg-dark: #02060a;
+  --color-panel: rgba(0, 20, 26, 0.7);
+  --color-text: #e6feff;
+  --glow: 0 0 8px var(--color-neon-soft), 0 0 16px rgba(0, 247, 255, 0.15);
+}
+
+/* ==========================================================================
+   CANVAS DOS FRAMES
+   - Fixo, cobre toda a viewport, centralizado
+   ========================================================================== */
+.frame-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: transparent;
+}
+
+/* ==========================================================================
+   LOADER - exibido durante o pré-carregamento das imagens
+   ========================================================================== */
+.loader {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  background: var(--color-bg-dark);
+  transition: opacity 0.4s ease;
+}
+
+.loader.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader__text {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 1rem;
+  color: var(--color-text);
+  text-shadow: var(--glow);
+}
+
+.loader__bar {
+  width: 40vmin;
+  height: 0.4vmin;
+  background: rgba(0, 247, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loader__fill {
+  width: 0%;
+  height: 100%;
+  background: var(--color-neon);
+  box-shadow: var(--glow);
+  transition: width 0.15s ease;
+}
+
+/* ==========================================================================
+   SLIDER VERTICAL - encaixado no espaço reservado à direita (slot do BG)
+   - Truque: input horizontal rotacionado -90deg dentro de um container
+     com as dimensões já invertidas, pra funcionar em qualquer navegador
+   ========================================================================== */
+.slider-wrap {
+  position: absolute;
+  top: 47%;
+  /* Posição horizontal do slider: aumente o valor de "right" pra mover mais
+     pra esquerda (ex: right: 12%, right: 18%, etc.) — relativo ao stage */
+  right: 10.5%;
+  z-index: 10;
+  width: 9vmin;
+  height: 80vmin; /* comprimento da barra - mantenha igual ao width do .vertical-slider abaixo */
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vertical-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  /* width não pode ser % aqui: percentuais resolvem contra a LARGURA do
+     wrap (a espessura, 6vmin), não a altura (o comprimento real da barra).
+     Por isso o comprimento é fixado explicitamente, igual ao height do wrap. */
+  width: 75vmin;
+  height: 2vmin;
+  margin: 0;
+  flex-shrink: 0; /* impede o flex container (wrap) de encolher a barra de volta */
+  transform: rotate(-90deg);
+  /* rtl inverte só a ponta min/max (frame 0 no topo, máximo embaixo),
+     sem afetar a centralização do thumb feita pelo margin-top abaixo */
+  direction: rtl;
+  background: rgba(0, 247, 255, 0.15);
+  border: 1px solid var(--color-neon-soft);
+  border-radius: 5px;
+  outline: none;
+  cursor: grab;
+  transition: box-shadow 0.2s ease;
+}
+
+.vertical-slider:active {
+  cursor: grabbing;
+}
+
+/* Trilho e botão (thumb) - Chrome / Edge / Safari */
+.vertical-slider::-webkit-slider-runnable-track {
+  height: 2vmin;
+  background: rgba(0, 247, 255, 0.15);
+  border-radius: 5px;
+}
+
+.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 4.2vmin;
+  height: 4.2vmin;
+  border-radius: 50%;
+  background: var(--color-neon);
+  box-shadow: var(--glow);
+  cursor: grab;
+  margin-top: -1.1vmin;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.vertical-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.08);
+}
+
+/* Trilho e botão (thumb) - Firefox */
+.vertical-slider::-moz-range-track {
+  height: 2vmin;
+  background: rgba(0, 247, 255, 0.15);
+  border-radius: 5px;
+}
+
+.vertical-slider::-moz-range-thumb {
+  width: 4.2vmin;
+  height: 4.2vmin;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-neon);
+  box-shadow: var(--glow);
+  cursor: grab;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.vertical-slider:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.08);
+}
+
+/* ==========================================================================
+   PAINEL LATERAL ESQUERDO - 3 quadros de informação (encaixados no BG)
+   - Mesma lógica de coordenadas locais usada no slider: o stage gira 90°,
+     então cada quadro é posicionado em coordenadas LOCAIS (pré-rotação) e o
+     conteúdo interno recebe um rotate(-90deg) pra compensar e ficar legível
+     na tela, exatamente como o truque já usado no .vertical-slider.
+   - Os valores de left/top/width/height abaixo foram calibrados visualmente
+     pra encaixar nos 3 quadros já desenhados no BG.png; ajuste fino se
+     necessário comparando com a posição real na tela.
+   ========================================================================== */
+.info-panel {
+  position: absolute;
+  width: 17%;
+  height: 10%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.info-panel--material {
+  left: 19%;
+  top: 80%;
+}
+
+.info-panel--tempo {
+  left: 50%;
+  top: 80%;
+}
+
+.info-panel--integridade {
+  left: 82%;
+  top: 80%;
+}
+
+.info-panel__inner {
+  width: 100%;
+  height: 100%;
+  transform: none; /* sem contra-rotação: fica "deitado", acompanhando o giro do stage */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6vmin;
+}
+
+.info-panel__title {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 700;
+  font-size: 2.2vmin;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  text-shadow: var(--glow);
+  text-align: center;
+}
+
+.info-panel__value {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 3.4vmin;
+  color: var(--color-neon);
+  text-shadow: var(--glow);
+  white-space: nowrap; /* evita quebra de linha (ex: "600 ANOS") que ficava torta */
+}
+
+.info-panel__value--spaced {
+  margin-top: 1.2vmin; /* afasta o PET do MATERIAL sem desalinhar (continua centralizado) */
+}
+
+.info-panel__value-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6vmin;
+}
+
+.info-panel__icon {
+  width: 2.4vmin;
+  height: 2.4vmin;
+  color: var(--color-neon);
+  filter: drop-shadow(0 0 4px var(--color-neon-soft));
+  flex-shrink: 0;
+}
+
+.info-panel__integridade-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5vmin;
+  white-space: nowrap;
+}
+
+.info-panel__integridade-label {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 3.4vmin;
+  color: var(--color-neon);
+  text-shadow: var(--glow);
+}
+
+.info-panel__integridade-value {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 3.4vmin;
+  color: var(--color-neon);
+  text-shadow: var(--glow);
+}
+
+.info-panel__bar-track {
+  width: 100%;
+  height: 0.8vmin;
+  background: rgba(0, 247, 255, 0.15);
+  border: 1px solid var(--color-neon-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.info-panel__bar-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-neon);
+  box-shadow: var(--glow);
+  transition: width 0.15s ease;
+}
+
+/* ==========================================================================
+   QUADRO MAIOR SUPERIOR ESQUERDO - título + subtítulo de introdução
+   - Mesma lógica de coordenadas locais dos outros painéis: sem contra-
+     rotação, segue a mesma orientação "deitada" do resto da interface.
+   ========================================================================== */
+.intro-panel {
+  position: absolute;
+  left: 34%;
+  top: 10%;
+  width: 58%;
+  height: 13%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.intro-panel__inner {
+  width: 100%;
+  height: 100%;
+  padding: 1vmin;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.5vmin;
+  text-align: left;
+  overflow: hidden;
+}
+
+.intro-panel__title {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 00;
+  font-size: 4vmin;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  text-shadow: var(--glow);
+  margin: 0;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.intro-panel__subtitle {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 300;
+  font-size: 2vmin;
+  line-height: 1.3;
+  color: var(--color-neon);
+  margin: 0;
+}
+
+/* ==========================================================================
+   LABELS EXTRA - mesma fonte/tamanho/cor dos labels existentes
+   (.info-panel__title: Oxanium 700, 2.2vmin, letter-spacing .1em, uppercase)
+   - Mesma lógica de coordenadas locais do resto do projeto.
+   ========================================================================== */
+.extra-label {
+  position: absolute;
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 700;
+  font-size: 2.1vmin;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  text-shadow: var(--glow);
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Topo da câmara/cilindro principal, centralizada horizontalmente, sem rotação */
+.extra-label--camara {
+  left: 35%;
+  top: 19%;
+  transform: translate(-50%, -50%);
+}
+
+/* Lado direito da tela, na altura do slider vertical, sem rotação (igual à câmara) */
+.extra-label--controle {
+  left: 84%;
+  top: 19%;
+  transform: translate(-50%, -50%);
+}
+
+/* Acima do (futuro) container dos botões de seleção, centralizada, sem rotação */
+.extra-label--selecione {
+  left: 50%;
+  top: 89%;
+  transform: translate(-50%, -50%);
+}
+
+/* Só câmara e controle, levemente maiores que os demais labels */
+.extra-label--camara,
+.extra-label--controle {
+  font-size: 2.3vmin;
+}
+
