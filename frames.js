@@ -29,7 +29,7 @@ const loader = document.getElementById('loader');
 const loaderFill = document.getElementById('loaderFill');
 const loaderPercent = document.getElementById('loaderPercent');
 const materialValueEl = document.getElementById('materialValue');
-const tempoValueEl = document.getElementById('tempoValue');
+const tempoNumberEl = document.getElementById('tempoNumber');
 const integridadeValueEl = document.getElementById('integridadeValue');
 const integridadeBarFillEl = document.getElementById('integridadeBarFill');
 
@@ -132,7 +132,7 @@ function updateInfoPanel(frame) {
   const integridade = Math.round((1 - progress) * 100);
 
   materialValueEl.textContent = material.nome;
-  tempoValueEl.textContent = `${anos} ANOS`;
+  tempoNumberEl.textContent = anos;
   integridadeValueEl.textContent = `${integridade}%`;
   integridadeBarFillEl.style.width = `${integridade}%`;
 }
