@@ -404,7 +404,7 @@ body {
 
 /* Topo da câmara/cilindro principal, centralizada horizontalmente, sem rotação */
 .extra-label--camara {
-  left: 35%;
+  left: 36%;
   top: 19%;
   transform: translate(-50%, -50%);
 }
