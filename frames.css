@@ -251,7 +251,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* flex-start + padding-top fixo: título sempre na mesma altura nos 3 painéis, mesmo o de integridade tendo um elemento extra (barra) abaixo */
+  padding-top: 1.4vmin;
   gap: 2.8vmin; /* afasta valor do título nos 3 painéis, mantendo tudo alinhado */
 }
 
@@ -289,8 +290,8 @@ body {
 }
 
 .info-panel__tempo-number {
-  width: 4ch; /* largura fixa: o "ANOS" não se move quando o número de dígitos muda (0 a 600) */
-  text-align: right;
+  width: 3ch; /* largura fixa (cobre até "600"): o "ANOS" não se move quando o número de dígitos muda */
+  text-align: center; /* centralizado em vez de right: evita que "0 ANOS" pareça deslocado pra direita sob "TEMPO DECORRIDO" */
   flex-shrink: 0;
 }
 
@@ -307,6 +308,7 @@ body {
   align-items: baseline;
   gap: 0.5vmin;
   white-space: nowrap;
+  margin-top: 0vmin;
 }
 
 .info-panel__integridade-label {
@@ -439,5 +441,118 @@ body {
 .extra-label--camara,
 .extra-label--controle {
   font-size: 2.3vmin;
+}
+
+/* ==========================================================================
+   BOTÕES DE SELEÇÃO DE MATERIAL - encaixados nos 4 quadros vazios do BG
+   - Mesma lógica de coordenadas locais dos outros painéis (left/top em %,
+     calibrados visualmente contra os 4 quadros desenhados no BG.png).
+   ========================================================================== */
+.material-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1vmin;
+  --line-color: rgba(0, 247, 255, 0.25);
+  background-color: transparent;
+  /* borda em 4 linhas soltas (cima, baixo, esquerda, direita), sem fechar nos cantos */
+  background-image:
+    linear-gradient(to right, var(--line-color), var(--line-color)),
+    linear-gradient(to right, var(--line-color), var(--line-color)),
+    linear-gradient(to bottom, var(--line-color), var(--line-color)),
+    linear-gradient(to bottom, var(--line-color), var(--line-color));
+  background-repeat: no-repeat;
+  background-size:
+    calc(100% - 1.6vmin) 2px,
+    calc(100% - 1.6vmin) 2px,
+    2px calc(100% - 1.6vmin),
+    2px calc(100% - 1.6vmin);
+  background-position:
+    top center,
+    bottom center,
+    center left,
+    center right;
+  border: none;
+  padding: 0 1.2vmin;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-image 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* largura/altura iguais nos 4 (o quadro 1 e o 4 têm um pequeno traço decorativo
+   fora do quadro no BG, que não faz parte da área clicável) */
+.material-btn--garrafa {
+  left: 14.68%;
+  top: 94.48%;
+  width: 21.20%;
+  height: 7.19%;
+}
+
+.material-btn--tenis {
+  left: 38.10%;
+  top: 94.48%;
+  width: 21.20%;
+  height: 7.19%;
+}
+
+.material-btn--lanche {
+  left: 61.43%;
+  top: 94.48%;
+  width: 21.20%;
+  height: 7.19%;
+}
+
+.material-btn--urso {
+  left: 84.81%;
+  top: 94.48%;
+  width: 21.20%;
+  height: 7.19%;
+}
+
+.material-btn__icon {
+  width: 4.8vmin;
+  height: 4.8vmin;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: grayscale(1) brightness(1.5) opacity(0.5); /* cinza por padrão (o svg já vem ciano) */
+  transition: filter 0.3s ease;
+}
+
+.material-btn--tenis .material-btn__icon,
+.material-btn--urso .material-btn__icon {
+  margin-right: 0.5vmin;
+}
+
+.material-btn--lanche .material-btn__icon {
+  margin-right: 1vmin;
+}
+
+.material-btn__label {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 700;
+  font-size: 2.5vmin;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6f8a90; /* cinza por padrão */
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+/* Estado ativo: borda, ícone e nome ficam azuis (1 botão ativo por vez) */
+.material-btn.is-active {
+  --line-color: var(--color-neon);
+}
+
+.material-btn.is-active .material-btn__label {
+  color: var(--color-text);
+  text-shadow: var(--glow);
+}
+
+.material-btn.is-active .material-btn__icon {
+  filter: drop-shadow(0 0 4px var(--color-neon-soft));
 }
 

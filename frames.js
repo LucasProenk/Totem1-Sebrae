@@ -1,21 +1,66 @@
 /* ==========================================================================
    CONFIGURAÇÃO
    ========================================================================== */
-const FRAME_COUNT = 240;          // total de imagens (Garrafa_00000.png -> Garrafa_00239.png)
-const FRAME_FOLDER = 'Garrafa/';  // caminho relativo (funciona com ou sem servidor local)
-const FRAME_PREFIX = 'Garrafa_';
-const FRAME_EXT = '.png';
+const FRAME_COUNT = 240;          // total de imagens por material
 const IDLE_RESET_MS = 17000;      // tempo sem interação até voltar pro frame 0
 
 /* ==========================================================================
-   MATERIAL
-   - Única fonte de dados pra todo o painel de informações. Pra adicionar
-     ou trocar o material exibido, basta mudar este objeto (nome, imagem,
-     decomposição máxima) sem tocar na lógica de atualização abaixo.
+   MATERIAIS DISPONÍVEIS (botões de seleção)
+   - Chave = data-material do botão (.material-btn) em index.html.
+   - Cada material tem sua própria pasta/prefixo de frames + os dados do
+     painel de informações (nome, decomposição máxima e a unidade de tempo
+     em que ela é exibida: ANOS ou MESES).
    ========================================================================== */
+const MATERIALS = {
+  garrafa: {
+    nome: 'PET',
+    decomposicaoMaxima: 600,
+    unidadeTempo: 'ANOS',
+    frameFolder: 'Garrafa',
+    framePrefix: 'Garrafa_',
+    frameExt: '.png',
+    framePad: 5,
+  },
+  tenis: {
+    nome: 'TÊNIS',
+    decomposicaoMaxima: 60,
+    unidadeTempo: 'ANOS',
+    frameFolder: 'button 02',
+    framePrefix: 'button 02_',
+    frameExt: '.png',
+    framePad: 5,
+  },
+  lanche: {
+    nome: 'LANCHE',
+    decomposicaoMaxima: 8,
+    unidadeTempo: 'MESES',
+    frameFolder: 'button 03',
+    framePrefix: 'button 03_',
+    frameExt: '.png',
+    framePad: 5,
+  },
+  urso: {
+    nome: 'URSO',
+    decomposicaoMaxima: 40,
+    unidadeTempo: 'ANOS',
+    frameFolder: 'button 04',
+    framePrefix: 'button 04_',
+    frameExt: '.png',
+    framePad: 5,
+  },
+};
+
+const DEFAULT_MATERIAL_KEY = 'garrafa';
+
+/* ==========================================================================
+   MATERIAL ATIVO
+   - Única fonte de dados pra todo o painel de informações.
+   ========================================================================== */
+let activeMaterialKey = DEFAULT_MATERIAL_KEY;
 const material = {
-  nome: 'PET',
-  decomposicaoMaxima: 600, // anos
+  nome: MATERIALS[DEFAULT_MATERIAL_KEY].nome,
+  decomposicaoMaxima: MATERIALS[DEFAULT_MATERIAL_KEY].decomposicaoMaxima,
+  unidadeTempo: MATERIALS[DEFAULT_MATERIAL_KEY].unidadeTempo,
 };
 
 /* ==========================================================================
@@ -30,25 +75,29 @@ const loaderFill = document.getElementById('loaderFill');
 const loaderPercent = document.getElementById('loaderPercent');
 const materialValueEl = document.getElementById('materialValue');
 const tempoNumberEl = document.getElementById('tempoNumber');
+const tempoUnidadeEl = document.getElementById('tempoUnidade');
 const integridadeValueEl = document.getElementById('integridadeValue');
 const integridadeBarFillEl = document.getElementById('integridadeBarFill');
 
 /* ==========================================================================
    ESTADO
+   - frameCache: um array de 240 imagens por material, carregado sob demanda
+     (só quando o material é selecionado pela primeira vez).
    ========================================================================== */
-const images = new Array(FRAME_COUNT);
+const frameCache = {};
 let currentFrame = 0;
 let isReady = false;
 
 /* ==========================================================================
    UTIL
    ========================================================================== */
-function pad(num) {
-  return String(num).padStart(5, '0');
+function pad(num, length) {
+  return String(num).padStart(length, '0');
 }
 
-function frameUrl(index) {
-  return `${FRAME_FOLDER}${FRAME_PREFIX}${pad(index)}${FRAME_EXT}`;
+function frameUrl(config, index) {
+  // encodeURIComponent na pasta: alguns nomes têm espaço (ex: "buttom 02")
+  return `${encodeURIComponent(config.frameFolder)}/${config.framePrefix}${pad(index, config.framePad)}${config.frameExt}`;
 }
 
 function clamp(value, min, max) {
@@ -57,30 +106,55 @@ function clamp(value, min, max) {
 
 /* ==========================================================================
    PRÉ-CARREGAMENTO DAS IMAGENS
-   - Carrega as 240 imagens em paralelo e atualiza a barra de progresso
+   - Carrega as 240 imagens do material em paralelo e atualiza a barra de
+     progresso. Resultado fica em frameCache[key] pra não recarregar depois.
+   - Usa fetch + createImageBitmap (decodifica fora da thread principal,
+     mais rápido que <img> uma a uma) com fallback pra Image() em
+     navegadores sem suporte a createImageBitmap.
    ========================================================================== */
-function preloadFrames() {
+function loadFrame(url) {
+  if (typeof createImageBitmap !== 'function') {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  return fetch(url)
+    .then((res) => res.blob())
+    .then((blob) => createImageBitmap(blob))
+    .catch(() => null);
+}
+
+function preloadMaterialFrames(key) {
+  if (frameCache[key]) return Promise.resolve(frameCache[key]);
+
+  const config = MATERIALS[key];
+  const frames = new Array(FRAME_COUNT);
   let loadedCount = 0;
 
-  return new Promise((resolve) => {
-    for (let i = 0; i < FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = frameUrl(i);
+  const onDone = () => {
+    loadedCount++;
+    const percent = Math.round((loadedCount / FRAME_COUNT) * 100);
+    loaderFill.style.width = `${percent}%`;
+    loaderPercent.textContent = `${percent}%`;
+  };
 
-      const onDone = () => {
-        loadedCount++;
-        const percent = Math.round((loadedCount / FRAME_COUNT) * 100);
-        loaderFill.style.width = `${percent}%`;
-        loaderPercent.textContent = `${percent}%`;
+  const loads = [];
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    loads.push(
+      loadFrame(frameUrl(config, i)).then((frame) => {
+        frames[i] = frame;
+        onDone();
+      })
+    );
+  }
 
-        if (loadedCount === FRAME_COUNT) resolve();
-      };
-
-      img.onload = onDone;
-      img.onerror = onDone; // não trava o carregamento se uma imagem falhar
-
-      images[i] = img;
-    }
+  return Promise.all(loads).then(() => {
+    frameCache[key] = frames;
+    return frames;
   });
 }
 
@@ -96,23 +170,24 @@ function resizeCanvas() {
 }
 
 function drawFrame(index) {
-  const img = images[index];
-  if (!img || !img.complete || img.naturalWidth === 0) return;
+  const frames = frameCache[activeMaterialKey];
+  const img = frames && frames[index];
+  if (!img || !img.width) return; // funciona com ImageBitmap e com Image (fallback)
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const canvasRatio = canvas.width / canvas.height;
-  const imgRatio = img.naturalWidth / img.naturalHeight;
+  const imgRatio = img.width / img.height;
 
   let drawWidth;
   let drawHeight;
 
   if (imgRatio > canvasRatio) {
     drawHeight = canvas.height;
-    drawWidth = img.naturalWidth * (drawHeight / img.naturalHeight);
+    drawWidth = img.width * (drawHeight / img.height);
   } else {
     drawWidth = canvas.width;
-    drawHeight = img.naturalHeight * (drawWidth / img.naturalWidth);
+    drawHeight = img.height * (drawWidth / img.width);
   }
 
   const offsetX = (canvas.width - drawWidth) / 2;
@@ -128,11 +203,12 @@ function drawFrame(index) {
 function updateInfoPanel(frame) {
   const progress = frame / (FRAME_COUNT - 1);
 
-  const anos = Math.round(progress * material.decomposicaoMaxima);
+  const tempo = Math.round(progress * material.decomposicaoMaxima);
   const integridade = Math.round((1 - progress) * 100);
 
   materialValueEl.textContent = material.nome;
-  tempoNumberEl.textContent = anos;
+  tempoNumberEl.textContent = tempo;
+  tempoUnidadeEl.textContent = material.unidadeTempo;
   integridadeValueEl.textContent = `${integridade}%`;
   integridadeBarFillEl.style.width = `${integridade}%`;
 }
@@ -169,6 +245,44 @@ window.addEventListener('resize', () => {
 });
 
 /* ==========================================================================
+   BOTÕES DE SELEÇÃO DE MATERIAL
+   - Apenas 1 botão ativo por vez (estilo rádio).
+   - Se o material clicado tiver dados em MATERIALS (por enquanto "garrafa"
+     e "tenis"), troca o objeto `material`, carrega (ou reaproveita do
+     cache) os frames daquele material e redesenha tudo no frame atual
+     do slider. Materiais sem entrada em MATERIALS continuam só com o
+     toggle visual.
+   ========================================================================== */
+const materialButtons = document.querySelectorAll('.material-btn');
+
+materialButtons.forEach((button) => {
+  button.addEventListener('click', async () => {
+    materialButtons.forEach((btn) => btn.classList.remove('is-active'));
+    button.classList.add('is-active');
+
+    const key = button.dataset.material;
+    const selected = MATERIALS[key];
+    if (!selected || !isReady) return;
+
+    material.nome = selected.nome;
+    material.decomposicaoMaxima = selected.decomposicaoMaxima;
+    material.unidadeTempo = selected.unidadeTempo;
+
+    if (key !== activeMaterialKey) {
+      activeMaterialKey = key;
+
+      if (!frameCache[key]) {
+        loader.classList.remove('is-hidden');
+        await preloadMaterialFrames(key);
+        loader.classList.add('is-hidden');
+      }
+    }
+
+    setFrame(0, { force: true }); // volta o slider pro início ao trocar de material
+  });
+});
+
+/* ==========================================================================
    RESET POR INATIVIDADE
    - Se ninguém mexer no slider por IDLE_RESET_MS, volta pro frame 0
    ========================================================================== */
@@ -187,7 +301,7 @@ function resetIdleTimer() {
 async function init() {
   resizeCanvas();
 
-  await preloadFrames();
+  await preloadMaterialFrames(DEFAULT_MATERIAL_KEY);
 
   isReady = true;
   setFrame(0, { force: true });
