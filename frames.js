@@ -108,26 +108,7 @@ function clamp(value, min, max) {
    PRÉ-CARREGAMENTO DAS IMAGENS
    - Carrega as 240 imagens do material em paralelo e atualiza a barra de
      progresso. Resultado fica em frameCache[key] pra não recarregar depois.
-   - Usa fetch + createImageBitmap (decodifica fora da thread principal,
-     mais rápido que <img> uma a uma) com fallback pra Image() em
-     navegadores sem suporte a createImageBitmap.
    ========================================================================== */
-function loadFrame(url) {
-  if (typeof createImageBitmap !== 'function') {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
-  }
-
-  return fetch(url)
-    .then((res) => res.blob())
-    .then((blob) => createImageBitmap(blob))
-    .catch(() => null);
-}
-
 function preloadMaterialFrames(key) {
   if (frameCache[key]) return Promise.resolve(frameCache[key]);
 
@@ -135,26 +116,28 @@ function preloadMaterialFrames(key) {
   const frames = new Array(FRAME_COUNT);
   let loadedCount = 0;
 
-  const onDone = () => {
-    loadedCount++;
-    const percent = Math.round((loadedCount / FRAME_COUNT) * 100);
-    loaderFill.style.width = `${percent}%`;
-    loaderPercent.textContent = `${percent}%`;
-  };
+  return new Promise((resolve) => {
+    for (let i = 0; i < FRAME_COUNT; i++) {
+      const img = new Image();
+      img.src = frameUrl(config, i);
 
-  const loads = [];
-  for (let i = 0; i < FRAME_COUNT; i++) {
-    loads.push(
-      loadFrame(frameUrl(config, i)).then((frame) => {
-        frames[i] = frame;
-        onDone();
-      })
-    );
-  }
+      const onDone = () => {
+        loadedCount++;
+        const percent = Math.round((loadedCount / FRAME_COUNT) * 100);
+        loaderFill.style.width = `${percent}%`;
+        loaderPercent.textContent = `${percent}%`;
 
-  return Promise.all(loads).then(() => {
-    frameCache[key] = frames;
-    return frames;
+        if (loadedCount === FRAME_COUNT) {
+          frameCache[key] = frames;
+          resolve(frames);
+        }
+      };
+
+      img.onload = onDone;
+      img.onerror = onDone; // não trava o carregamento se uma imagem falhar
+
+      frames[i] = img;
+    }
   });
 }
 
@@ -172,22 +155,22 @@ function resizeCanvas() {
 function drawFrame(index) {
   const frames = frameCache[activeMaterialKey];
   const img = frames && frames[index];
-  if (!img || !img.width) return; // funciona com ImageBitmap e com Image (fallback)
+  if (!img || !img.complete || img.naturalWidth === 0) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const canvasRatio = canvas.width / canvas.height;
-  const imgRatio = img.width / img.height;
+  const imgRatio = img.naturalWidth / img.naturalHeight;
 
   let drawWidth;
   let drawHeight;
 
   if (imgRatio > canvasRatio) {
     drawHeight = canvas.height;
-    drawWidth = img.width * (drawHeight / img.height);
+    drawWidth = img.naturalWidth * (drawHeight / img.naturalHeight);
   } else {
     drawWidth = canvas.width;
-    drawHeight = img.height * (drawWidth / img.width);
+    drawHeight = img.naturalHeight * (drawWidth / img.naturalWidth);
   }
 
   const offsetX = (canvas.width - drawWidth) / 2;
