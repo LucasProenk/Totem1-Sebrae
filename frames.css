@@ -23,8 +23,10 @@ body {
 /* ==========================================================================
    ROTAÇÃO DA INTERFACE (totem montado fisicamente na vertical)
    - O navegador continua vendo um viewport paisagem (ex: 1920x1080).
-   - O stage recebe as dimensões invertidas e roda 90°, passando a ocupar
-     exatamente 100vw x 100vh da tela real, em qualquer resolução.
+   - O stage recebe as dimensões invertidas, roda 90° e é travado na
+     proporção 9:16 do BG (ver width/height abaixo): numa tela 16:9 ocupa
+     exatamente 100vw x 100vh (full screen, igual antes); em qualquer outra
+     proporção de tela, sobra letterbox em vez de desalinhar o layout.
    - position: fixed faz o stage virar o "containing block" dos filhos
      (que usam position: absolute), então tudo dentro dele passa a ser
      posicionado em relação ao stage já rotacionado, não ao viewport real.
@@ -33,11 +35,21 @@ body {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 100vh;
-  height: 100vw;
+  /* Largura/altura travadas na proporção do BG (1080x1920 = 9:16), calculadas
+     como "contain" dentro da tela real: em telas 16:9 (proporção do totem)
+     o resultado é idêntico ao 100vh/100vw de antes (full screen, sem sobra);
+     em qualquer outra proporção de tela, sobra uma margem preta (letterbox)
+     em vez de espremer/desalinhar o layout. */
+  width: min(100vh, 100vw * 9 / 16);
+  height: min(100vw, 100vh * 16 / 9);
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center center;
   overflow: hidden;
+
+  /* Container de consulta: os "cqmin" usados no resto do arquivo passam a
+     ser relativos a ESTE box (já travado em 9:16), não à tela real - por
+     isso o conteúdo interno escala certinho mesmo com letterbox. */
+  container-type: size;
 
   /* Imagem de fundo do totem (1080x1920), cobrindo 100% do stage já rotacionado */
   background: url('img/BG.png');
@@ -103,8 +115,8 @@ body {
 }
 
 .loader__bar {
-  width: 40vmin;
-  height: 0.4vmin;
+  width: 40cqmin;
+  height: 0.4cqmin;
   background: rgba(0, 247, 255, 0.15);
   border-radius: 2px;
   overflow: hidden;
@@ -130,8 +142,8 @@ body {
      pra esquerda (ex: right: 12%, right: 18%, etc.) — relativo ao stage */
   right: 10.5%;
   z-index: 10;
-  width: 9vmin;
-  height: 80vmin; /* comprimento da barra - mantenha igual ao width do .vertical-slider abaixo */
+  width: 9cqmin;
+  height: 80cqmin; /* comprimento da barra - mantenha igual ao width do .vertical-slider abaixo */
   transform: translateY(-50%);
   display: flex;
   align-items: center;
@@ -142,10 +154,10 @@ body {
   -webkit-appearance: none;
   appearance: none;
   /* width não pode ser % aqui: percentuais resolvem contra a LARGURA do
-     wrap (a espessura, 6vmin), não a altura (o comprimento real da barra).
+     wrap (a espessura, 6cqmin), não a altura (o comprimento real da barra).
      Por isso o comprimento é fixado explicitamente, igual ao height do wrap. */
-  width: 75vmin;
-  height: 2vmin;
+  width: 75cqmin;
+  height: 2cqmin;
   margin: 0;
   flex-shrink: 0; /* impede o flex container (wrap) de encolher a barra de volta */
   transform: rotate(-90deg);
@@ -166,20 +178,20 @@ body {
 
 /* Trilho e botão (thumb) - Chrome / Edge / Safari */
 .vertical-slider::-webkit-slider-runnable-track {
-  height: 2vmin;
+  height: 2cqmin;
   background: rgba(0, 247, 255, 0.15);
   border-radius: 5px;
 }
 
 .vertical-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 4.2vmin;
-  height: 4.2vmin;
+  width: 4.2cqmin;
+  height: 4.2cqmin;
   border-radius: 50%;
   background: var(--color-neon);
   box-shadow: var(--glow);
   cursor: grab;
-  margin-top: -1.1vmin;
+  margin-top: -1.1cqmin;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
@@ -190,14 +202,14 @@ body {
 
 /* Trilho e botão (thumb) - Firefox */
 .vertical-slider::-moz-range-track {
-  height: 2vmin;
+  height: 2cqmin;
   background: rgba(0, 247, 255, 0.15);
   border-radius: 5px;
 }
 
 .vertical-slider::-moz-range-thumb {
-  width: 4.2vmin;
-  height: 4.2vmin;
+  width: 4.2cqmin;
+  height: 4.2cqmin;
   border: none;
   border-radius: 50%;
   background: var(--color-neon);
@@ -252,14 +264,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start; /* flex-start + padding-top fixo: título sempre na mesma altura nos 3 painéis, mesmo o de integridade tendo um elemento extra (barra) abaixo */
-  padding-top: 1.4vmin;
-  gap: 2.8vmin; /* afasta valor do título nos 3 painéis, mantendo tudo alinhado */
+  padding-top: 1.4cqmin;
+  gap: 2.8cqmin; /* afasta valor do título nos 3 painéis, mantendo tudo alinhado */
 }
 
 .info-panel__title {
   font-family: 'Oxanium', sans-serif;
   font-weight: 700;
-  font-size: 2.2vmin;
+  font-size: 2.2cqmin;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text);
@@ -270,7 +282,7 @@ body {
 .info-panel__value {
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
-  font-size: 3.4vmin;
+  font-size: 3.4cqmin;
   color: var(--color-neon);
   text-shadow: var(--glow);
   white-space: nowrap; /* evita quebra de linha (ex: "600 ANOS") que ficava torta */
@@ -279,13 +291,13 @@ body {
 .info-panel__value-row {
   display: flex;
   align-items: center;
-  gap: 0.6vmin;
+  gap: 0.6cqmin;
 }
 
 .info-panel__tempo-row {
   display: flex;
   align-items: baseline;
-  gap: 0.6vmin;
+  gap: 0.6cqmin;
   white-space: nowrap;
 }
 
@@ -296,8 +308,8 @@ body {
 }
 
 .info-panel__icon {
-  width: 2.4vmin;
-  height: 2.4vmin;
+  width: 2.4cqmin;
+  height: 2.4cqmin;
   color: var(--color-neon);
   filter: drop-shadow(0 0 4px var(--color-neon-soft));
   flex-shrink: 0;
@@ -306,15 +318,15 @@ body {
 .info-panel__integridade-row {
   display: flex;
   align-items: baseline;
-  gap: 0.5vmin;
+  gap: 0.5cqmin;
   white-space: nowrap;
-  margin-top: 0vmin;
+  margin-top: 0cqmin;
 }
 
 .info-panel__integridade-label {
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
-  font-size: 3.4vmin;
+  font-size: 3.4cqmin;
   color: var(--color-neon);
   text-shadow: var(--glow);
 }
@@ -322,7 +334,7 @@ body {
 .info-panel__integridade-value {
   font-family: 'Roboto', sans-serif;
   font-weight: 500;
-  font-size: 3.4vmin;
+  font-size: 3.4cqmin;
   color: var(--color-neon);
   text-shadow: var(--glow);
   width: 4.5ch; /* largura fixa: o "Integridade:" não se move quando o número muda (0% a 100%) */
@@ -332,7 +344,7 @@ body {
 
 .info-panel__bar-track {
   width: 100%;
-  height: 0.8vmin;
+  height: 0.8cqmin;
   background: rgba(0, 247, 255, 0.15);
   border: 1px solid var(--color-neon-soft);
   border-radius: 4px;
@@ -365,13 +377,13 @@ body {
 .intro-panel__inner {
   width: 100%;
   height: 100%;
-  padding: 1vmin;
+  padding: 1cqmin;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 0.5vmin;
+  gap: 0.5cqmin;
   text-align: left;
   overflow: hidden;
 }
@@ -379,7 +391,7 @@ body {
 .intro-panel__title {
   font-family: 'Oxanium', sans-serif;
   font-weight: 00;
-  font-size: 5.5vmin;
+  font-size: 5.5cqmin;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text);
@@ -392,7 +404,7 @@ body {
 .intro-panel__subtitle {
   font-family: 'Roboto', sans-serif;
   font-weight: 300;
-  font-size: 2.7vmin;
+  font-size: 2.7cqmin;
   line-height: 1.3;
   color: var(--color-neon);
   margin: 0;
@@ -400,14 +412,14 @@ body {
 
 /* ==========================================================================
    LABELS EXTRA - mesma fonte/tamanho/cor dos labels existentes
-   (.info-panel__title: Oxanium 700, 2.2vmin, letter-spacing .1em, uppercase)
+   (.info-panel__title: Oxanium 700, 2.2cqmin, letter-spacing .1em, uppercase)
    - Mesma lógica de coordenadas locais do resto do projeto.
    ========================================================================== */
 .extra-label {
   position: absolute;
   font-family: 'Oxanium', sans-serif;
   font-weight: 700;
-  font-size: 2.1vmin;
+  font-size: 2.1cqmin;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-text);
@@ -440,7 +452,7 @@ body {
 /* Só câmara e controle, levemente maiores que os demais labels */
 .extra-label--camara,
 .extra-label--controle {
-  font-size: 2.3vmin;
+  font-size: 2.3cqmin;
 }
 
 /* ==========================================================================
@@ -456,7 +468,7 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.1vmin;
+  gap: 0.1cqmin;
   --line-color: rgba(0, 247, 255, 0.25);
   background-color: transparent;
   /* borda em 4 linhas soltas (cima, baixo, esquerda, direita), sem fechar nos cantos */
@@ -467,17 +479,17 @@ body {
     linear-gradient(to bottom, var(--line-color), var(--line-color));
   background-repeat: no-repeat;
   background-size:
-    calc(100% - 1.6vmin) 2px,
-    calc(100% - 1.6vmin) 2px,
-    2px calc(100% - 1.6vmin),
-    2px calc(100% - 1.6vmin);
+    calc(100% - 1.6cqmin) 2px,
+    calc(100% - 1.6cqmin) 2px,
+    2px calc(100% - 1.6cqmin),
+    2px calc(100% - 1.6cqmin);
   background-position:
     top center,
     bottom center,
     center left,
     center right;
   border: none;
-  padding: 0 1.2vmin;
+  padding: 0 1.2cqmin;
   box-sizing: border-box;
   cursor: pointer;
   transition: background-image 0.3s ease, box-shadow 0.3s ease;
@@ -514,27 +526,30 @@ body {
 }
 
 .material-btn__icon {
-  width: 4.8vmin;
-  height: 4.8vmin;
+  width: 4.8cqmin;
+  height: 4.8cqmin;
   object-fit: contain;
   flex-shrink: 0;
   filter: grayscale(1) brightness(1.5) opacity(0.5); /* cinza por padrão (o svg já vem ciano) */
   transition: filter 0.3s ease;
 }
 
-.material-btn--tenis .material-btn__icon,
-.material-btn--urso .material-btn__icon {
-  margin-right: 0.5vmin;
+.material-btn--tenis .material-btn__icon {
+  margin-right: 0.5cqmin;
 }
 
 .material-btn--lanche .material-btn__icon {
-  margin-right: 1vmin;
+  margin-right: 1.5cqmin;
+}
+
+.material-btn--urso .material-btn__icon {
+  margin-right: 0.5cqmin;
 }
 
 .material-btn__label {
   font-family: 'Oxanium', sans-serif;
   font-weight: 700;
-  font-size: 2.5vmin;
+  font-size: 2.3cqmin;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #6f8a90; /* cinza por padrão */

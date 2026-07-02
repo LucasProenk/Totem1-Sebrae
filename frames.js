@@ -31,17 +31,17 @@ const MATERIALS = {
     framePad: 5,
   },
   lanche: {
-    nome: 'LANCHE',
-    decomposicaoMaxima: 8,
-    unidadeTempo: 'MESES',
+    nome: 'ESPONJA',
+    decomposicaoMaxima: 90,
+    unidadeTempo: 'ANOS',
     frameFolder: 'button 03',
     framePrefix: 'button 03_',
     frameExt: '.png',
     framePad: 5,
   },
   urso: {
-    nome: 'URSO',
-    decomposicaoMaxima: 40,
+    nome: 'BALÃO',
+    decomposicaoMaxima: 140,
     unidadeTempo: 'ANOS',
     frameFolder: 'button 04',
     framePrefix: 'button 04_',
@@ -187,7 +187,7 @@ function updateInfoPanel(frame) {
   const progress = frame / (FRAME_COUNT - 1);
 
   const tempo = Math.round(progress * material.decomposicaoMaxima);
-  const integridade = Math.round((1 - progress) * 100);
+  const integridade = Math.max(1, Math.round((1 - progress) * 100));
 
   materialValueEl.textContent = material.nome;
   tempoNumberEl.textContent = tempo;
