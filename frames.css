@@ -185,13 +185,13 @@ body {
 
 .vertical-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 4.2cqmin;
-  height: 4.2cqmin;
+  width: 5cqmin;
+  height: 5cqmin;
   border-radius: 50%;
   background: var(--color-neon);
   box-shadow: var(--glow);
   cursor: grab;
-  margin-top: -1.1cqmin;
+  margin-top: -1.5cqmin;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
@@ -208,8 +208,8 @@ body {
 }
 
 .vertical-slider::-moz-range-thumb {
-  width: 4.2cqmin;
-  height: 4.2cqmin;
+  width: 5cqmin;
+  height: 5cqmin;
   border: none;
   border-radius: 50%;
   background: var(--color-neon);
