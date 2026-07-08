@@ -18,6 +18,7 @@ body {
   height: 100%;
   background: #000; /* evita qualquer "flash" nas bordas durante a rotação */
   overflow: hidden; /* sem scroll - o frame é controlado só pelo slider */
+  cursor: none; /* totem/touch: esconde o cursor do mouse em toda a tela */
 }
 
 /* ==========================================================================
@@ -168,12 +169,12 @@ body {
   border: 1px solid var(--color-neon-soft);
   border-radius: 5px;
   outline: none;
-  cursor: grab;
+  cursor: none;
   transition: box-shadow 0.2s ease;
 }
 
 .vertical-slider:active {
-  cursor: grabbing;
+  cursor: none;
 }
 
 /* Trilho e botão (thumb) - Chrome / Edge / Safari */
@@ -190,13 +191,13 @@ body {
   border-radius: 50%;
   background: var(--color-neon);
   box-shadow: var(--glow);
-  cursor: grab;
+  cursor: none;
   margin-top: -1.5cqmin;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .vertical-slider:active::-webkit-slider-thumb {
-  cursor: grabbing;
+  cursor: none;
   transform: scale(1.08);
 }
 
@@ -214,12 +215,12 @@ body {
   border-radius: 50%;
   background: var(--color-neon);
   box-shadow: var(--glow);
-  cursor: grab;
+  cursor: none;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .vertical-slider:active::-moz-range-thumb {
-  cursor: grabbing;
+  cursor: none;
   transform: scale(1.08);
 }
 
@@ -491,7 +492,7 @@ body {
   border: none;
   padding: 0 1.2cqmin;
   box-sizing: border-box;
-  cursor: pointer;
+  cursor: none;
   transition: background-image 0.3s ease, box-shadow 0.3s ease;
 }
 
